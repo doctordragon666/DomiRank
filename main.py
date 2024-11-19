@@ -76,4 +76,7 @@ plt.plot(ourRangeNew, domiRankRobustness, label = 'Recursive DR')
 plt.legend()
 plt.xlabel('fraction of nodes removed')
 plt.ylabel('largest connected component')
-plt.show()
+
+# plt.show()
+# in linux use png storage
+plt.savefig("result.png")
