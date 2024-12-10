@@ -8,11 +8,10 @@ import networkx as nx
 
 def get_largest_component(G, strong = False):
     '''
-    翻译：这里我们得到图的最大组件，无论是来自scipy.sparse还是来自networkX.Graph数据类型。
-    here we get the largest component of a graph, either from scipy.sparse or from networkX.Graph datatype.
-    1. The argument changes whether or not you want to find the strong or weak - connected components of the graph
+    这里我们得到图的最大分支，无论是来自scipy.sparse还是来自networkX.Graph数据类型。
+    改变参数`strong`来找到你想要的图的强连通分支或弱连通分支
     '''
-    if type(G) == nx.classes.graph.Graph: #check if it is a networkx Graph
+    if type(G) == nx.classes.graph.Graph:
         if nx.is_directed(G) and strong == False:
             GMask = max(nx.weakly_connected_components(G), key = len)
         if nx.is_directed(G) and strong == True:
@@ -26,10 +25,8 @@ def get_largest_component(G, strong = False):
 
 def relabel_nodes(G, yield_map = False):
     '''
-    relabels the nodes to be from 0, ... len(G).
-    1. Yield_map returns an extra output as a dict. in case you want to save the hash-map to retrieve node-id
-    翻译：重新标记节点，使其从0，...len(G)。
-    1. Yield_map返回一个额外的输出作为字典。如果你想保存哈希映射来检索节点id
+    翻译：重新标记0，到len(G)节点
+    如果你想保存哈希映射来检索节点id,`Yield_map`返回一个额外的字典类型输出。
     '''
     if yield_map == True:
         nodes = dict(zip(range(len(G)), G.nodes()))
@@ -43,10 +40,10 @@ def get_component_size(G, strong = False):
     '''
     here we get the largest component of a graph, either from scipy.sparse or from networkX.Graph datatype.
     1. The argument changes whether or not you want to find the strong or weak - connected components of the graph
-    翻译：在这里，我们得到图的最大组成部分（scipy.sparse或者networkX.Graph数据类型）。
+    翻译：在这里，我们得到图的最大组成部分的大小（scipy.sparse或者networkX.Graph数据类型）。
     1.参数改变你想找到图的强连通分支还是弱连通分支
     '''
-    if type(G) == nx.classes.graph.Graph: #check if it is a networkx Graph
+    if type(G) == nx.classes.graph.Graph: 
         if nx.is_directed(G) and strong == False:
             GMask = max(nx.weakly_connected_components(G), key = len)
         if nx.is_directed(G) and strong == True:
@@ -76,7 +73,6 @@ def get_link_size(G):
 
 def remove_node(G, removedNode):
     '''
-    removes the node from the graph by removing it from a networkx.Graph type, or zeroing the edges in array form.
     翻译：从networkx.Graph类型中移除节点，或以数组形式零化边。
     '''
     if type(G) == nx.classes.graph.Graph: #check if it is a networkx Graph
@@ -94,9 +90,7 @@ def remove_node(G, removedNode):
     
 def generate_attack(centrality, node_map = False):
     '''
-    we generate an attack based on a centrality measure - 
-    you can possibly input the node_map to convert the attack to have the correct nodeID
-    翻译：根据中心性度量生成攻击——你可以输入node_map将攻击转换为正确的nodeID
+    翻译：根据中心性度量生成攻击———你可以输入node_map将攻击转换为正确的nodeID
     '''
     if node_map == False:
         node_map = range(len(centrality))
@@ -107,15 +101,9 @@ def generate_attack(centrality, node_map = False):
     return attackStrategy
 
 def network_attack_sampled(G, attackStrategy, sampling = 0):
-    '''Attack a network in a sampled manner... recompute links and largest component after every xth node removal, according to some - 
-    G: is the input graph, preferably as a sparse array.
-    inputed attack strategy
-    Note: if sampling is not set, it defaults to sampling every 1%, otherwise, sampling is an integer
-    that is equal to the number of nodes you want to skip every time you sample. 
-    So for example sampling = int(len(G)/100) would sample every 1% of the nodes removed
-    翻译：以采样的方式攻击网络...在每次x个节点移除后重新计算链接和最大组件，根据某种——
+    '''
+    翻译：以采样的方式攻击网络...根据某种输入的attackStrategy，在每次节点移除后重新计算链接和最大组件，
     G：是输入图，最好是一个稀疏数组。
-    输入的攻击策略
     注意：如果未设置采样，则默认为每1%采样一次，否则，采样是一个整数，等于每次采样时要跳过的节点数。
     例如，sampling = int(len(G)/100)将每1%采样一次
     '''
@@ -154,21 +142,10 @@ def network_attack_sampled(G, attackStrategy, sampling = 0):
 
 def domirank(G, analytical = True, sigma = -1, dt = 0.1, epsilon = 1e-5, maxIter = 1000, checkStep = 10):
     '''
-    G is the input graph as a (preferably) sparse array.
-    This solves the dynamical equation presented in the Paper: "DomiRank Centrality: revealing structural fragility of
-complex networks via node dominance" and yields the following output: bool, DomiRankCentrality
-    Here, sigma needs to be chosen a priori.
-    dt determines the step size, usually, 0.1 is sufficiently fine for most networks (could cause issues for networks
-    with an extremely high degree, but has never failed me!)
-    maxIter is the depth that you are searching with in case you don't converge or diverge before that.
-    Checkstep is the amount of steps that you go before checking if you have converged or diverged.
-    
-    
-    This algorithm scales with O(m) where m is the links in your sparse array.
     翻译：G是作为稀疏数组输入的图。
     这解决了论文中提出的动态方程：“DomiRank Centrality：通过节点优势揭示复杂网络的架构脆弱性”并产生以下输出：bool，DomiRankCentrality
     在这里，sigma需要事先选择。
-    dt确定步长，通常，0.1对于大多数网络来说已经足够精细（可能会对具有极高度的网络造成问题，但我从未失败过！）
+    dt确定步长，通常，0.1对于大多数网络来说已经足够精细（可能会对度值极高的网络造成问题）
     maxIter是你在没有在之前收敛或发散之前搜索的深度。
     Checkstep是你在检查是否收敛或发散之前要走的步数。
     该算法与O(m)成比例，其中m是您的稀疏数组中的链接。
@@ -209,26 +186,13 @@ complex networks via node dominance" and yields the following output: bool, Domi
     
 def find_eigenvalue(G, minVal = 0, maxVal = 1, maxDepth = 100, dt = 0.1, epsilon = 1e-5, maxIter = 100, checkStep = 10):
     '''
-    G: is the input graph as a sparse array.
-    Finds the largest negative eigenvalue of an adjacency matrix using the DomiRank algorithm.
-    Currently this function is only single-threaded, as the bisection algorithm only allows for single-threaded
-    exection. Note, that this algorithm is slightly different, as it uses the fact that DomiRank diverges
-    at values larger than -1/lambN to its benefit, and thus, it is not exactly bisection theorem. I haven't
-    tested in order to see which exact value is the fastest for execution, but that will be done soon!
-    Some notes:
-    Increase maxDepth for increased accuracy.
-    Increase maxIter if DomiRank doesn't start diverging within 100 iterations -- i.e. increase at the expense of 
-    increased computational cost if you want potential increased accuracy.
-    Decrease checkstep for increased error-finding for the values of sigma that are too large, but higher compcost
-    if you are frequently less than the value (but negligible compcost).
-
     翻译：G是作为稀疏数组输入的图。
     使用DomiRank算法找到邻接矩阵的最大负特征值。
     当前此函数仅是单线程的，因为二分算法只允许单线程执行。注意，这个算法略有不同，因为它利用了DomiRank在-1/lambN值更大的情况下发散的事实，因此它并不完全符合二分定理。我还没有测试过，以确定哪种确切值对于执行来说是最快的，但很快就会完成！
     一些说明：
     增加maxDepth以提高准确性。
     如果DomiRank在100次迭代内没有开始发散，则增加maxIter（以增加计算成本为代价，如果希望潜在提高准确性）。
-    如果sigma的值太大，则减少checkstep以提高错误发现，但频繁小于该值时的计算成本（但计算成本可以忽略不计）。
+    如果sigma的值太大，则减少checkstep以提高错误发现，但频繁减少该值时计算成本会变大（但计算成本可以忽略不计）。
     '''
     x = (minVal + maxVal)/G.sum(axis=-1).max()
     minValStored = 0
@@ -261,17 +225,11 @@ def process_iteration(q, i, analytical, sigma, spArray, maxIter, checkStep, dt, 
     q.put((i, finalErrors))
 
 def optimal_sigma(spArray, analytical = True, endVal = 0, startval = 0.000001, iterationNo = 100, dt = 0.1, epsilon = 1e-5, maxIter = 100, checkStep = 10, maxDepth = 100, sampling = 0):
-    ''' This part finds the optimal sigma by searching the space, here are the novel parameters:
-    spArray: is the input sparse array/matrix for the network.
-    startVal: is the starting value of the space that you want to search.
-    endVal: is the ending value of the space that you want to search (normally it should be the eigenvalue)
-    iterationNo: the number of partitions of the space between lambN that you set
-    
-    return : the function returns the value of sigma - the numerator of the fraction of (\sigma)/(-1*lambN)
+    ''' 
     翻译：这部分通过搜索空间来找到最优的sigma，这里有一些新颖的参数：
     spArray：是网络的输入稀疏数组/矩阵。
     startVal：是你想要搜索的空间的起始值。
-    endVal：是你想要搜索的空间的结束值（通常是lambN的值）
+    endVal：是你想要搜索的空间的结束值（通常是特征值）
     iterationNo：你设置的lambN之间的空间划分的数量
     返回：函数返回sigma的值 - 分数（\sigma）/（-1*lambN）的分子
     '''
