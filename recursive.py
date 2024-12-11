@@ -1,4 +1,4 @@
-import domirank as dr
+import drank as dr
 import networkx as nx
 import matplotlib.pyplot as plt
 import scipy as sp
@@ -28,6 +28,8 @@ np.random.seed(seed)
 ############## IMPORTANT!!!! Here you can create whatever graph you want and just comment this erdos-renyi network out ############
 # THIS IS THE INPUT, CHANGE THIS TO ANY GRAPH #######
 G = nx.fast_gnp_random_graph(N, 2*m/N, directed=directed, seed=seed)
+nx.draw_networkx(G)
+plt.savefig('graph.png')
 
 # 在这里和下面插入图 ########################3
 # insert network hereunder ########################3
@@ -69,24 +71,18 @@ plt.ylabel('loss')
 
 
 # generate the centrality using the optimal sigma
-_, ourDomiRankDistribution = dr.domirank(
-    GAdj, analytical=analytical, sigma=sigma)
+_, ourDomiRankDistribution = dr.domirank_by_recursive(
+    GAdj, sigma=sigma)
 # generate the attack using the centrality (descending)
 ourDomiRankAttack = dr.generate_attack(ourDomiRankDistribution)
 # attack the network and get the largest connected component evolution
 domiRankRobustness, domiRankLinks = dr.network_attack_sampled(
     GAdj, ourDomiRankAttack)
 
-# UNCOMMENT HERE: to compute the analytical solution for the same sigma value (make sure your network is not too big.)
-# analyticalDomiRankDistribution = sp.sparse.linalg.spsolve(sigma*GAdj + sp.sparse.identity(GAdj.shape[0]), sigma*GAdj.sum(axis=-1)) #analytical solution to DR
-# analyticalDomiRankAttack = dr.generate_attack(analyticalDomiRankDistribution) #generate the attack using the centrality (descending)
-# domiRankRobustnessA, domiRankLinksA = dr.network_attack_sampled(GAdj, analyticalDomiRankAttack) #attack the network and get the largest connected component evolution
-
 # generating the plot
 fig2 = plt.figure(2)
 ourRangeNew = np.linspace(0, 1, domiRankRobustness.shape[0])
 plt.plot(ourRangeNew, domiRankRobustness, label='Recursive DR')
-# plt.plot(ourRangeNew, domiRankRobustnessA, label = 'Analytical DR') #UNCOMMENT HERE to plot the analyitcal solution
 plt.legend()
 plt.xlabel('fraction of nodes removed')
 plt.ylabel('largest connected component')
