@@ -27,10 +27,10 @@ def get_largest_component(G, strong=False):
 
 def relabel_nodes(G, yield_map=False):
     '''
-    翻译：重新标记0，到len(G)节点
+    重新标记0，到len(G)节点
     如果你想保存哈希映射来检索节点id,`Yield_map`返回一个额外的字典类型输出。
     '''
-    if yield_map == True:
+    if yield_map:
         nodes = dict(zip(range(len(G)), G.nodes()))
         G = nx.relabel_nodes(G, dict(zip(G.nodes(), range(len(G)))))
         return G, nodes
@@ -41,20 +41,11 @@ def relabel_nodes(G, yield_map=False):
 
 def get_component_size(G, strong=False):
     '''
-    here we get the largest component of a graph, either from scipy.sparse or from networkX.Graph datatype.
-    1. The argument changes whether or not you want to find the strong or weak - connected components of the graph
-    翻译：在这里，我们得到图的最大组成部分的大小（scipy.sparse或者networkX.Graph数据类型）。
+    在这里，我们得到图的最大组成部分的大小（scipy.sparse或者networkX.Graph数据类型）。
     1.参数改变你想找到图的强连通分支还是弱连通分支
     '''
     if type(G) == nx.classes.graph.Graph:
-        if nx.is_directed(G) and strong == False:
-            GMask = max(nx.weakly_connected_components(G), key=len)
-        if nx.is_directed(G) and strong == True:
-            GMask = max(nx.strongly_connected_components(G), key=len)
-        else:
-            GMask = max(nx.connected_components(G), key=len)
-        G = G.subgraph(GMask)
-        return len(GMask)
+        return len(get_largest_component(G))
     elif type(G) == scipy.sparse._arrays.csr_array:
         if strong == False:
             connection_type = 'weak'
@@ -69,8 +60,11 @@ def get_component_size(G, strong=False):
 
 
 def get_link_size(G):
-    if type(G) == nx.classes.graph.Graph:  # check if it is a networkx Graph
-        links = len(G.edges())  # convert to scipy sparse if it is a graph
+    """
+    获取图中的边数。
+    """
+    if type(G) == nx.classes.graph.Graph:
+        links = len(G.edges())
     elif type(G) == scipy.sparse._arrays.csr_array:
         links = G.sum()
     else:
@@ -80,7 +74,7 @@ def get_link_size(G):
 
 def remove_node(G, removedNode):
     '''
-    翻译：从networkx.Graph类型中移除节点，或以数组形式零化边。
+    移除节点，或以数组形式零化边。
     '''
     if type(G) == nx.classes.graph.Graph:  # check if it is a networkx Graph
         if type(removedNode) == int:
@@ -91,7 +85,6 @@ def remove_node(G, removedNode):
         return G
     elif type(G) == scipy.sparse._arrays.csr_array:
         diag = sp.sparse.csr_array(sp.sparse.eye(G.shape[0]))
-        # set the rows and columns that are equal to zero in the sparse array
         diag[removedNode, removedNode] = 0
         G = diag @ G
         return G @ diag
@@ -99,7 +92,7 @@ def remove_node(G, removedNode):
 
 def generate_attack(centrality, node_map=False):
     '''
-    翻译：根据中心性度量生成攻击———你可以输入node_map将攻击转换为正确的nodeID
+    翻译：根据中心性度量生成攻击———输入node_map将攻击转换为实际的nodeID
     '''
     if node_map == False:
         node_map = range(len(centrality))
@@ -117,42 +110,74 @@ def network_attack_sampled(G, attackStrategy, sampling=0):
     注意：如果未设置采样，则默认为每1%采样一次，否则，采样是一个整数，等于每次采样时要跳过的节点数。
     例如，sampling = int(len(G)/100)将每1%采样一次
     '''
-    if type(G) == nx.classes.graph.Graph:  # check if it is a networkx Graph
-        # convert to scipy sparse if it is a graph
+    # 如果G是图类型，则将G转换为稀疏矩阵
+    if type(G) == nx.classes.graph.Graph:
         GAdj = nx.to_scipy_sparse_array(G)
     else:
         GAdj = G.copy()
 
+    # 如果采样率为0且GAdj的节点数大于100，则将采样率设置为节点数除以100
     if (sampling == 0) and (GAdj.shape[0] > 100):
         sampling = int(GAdj.shape[0]/100)
+    # 如果采样率为0且GAdj的节点数小于等于100，则将采样率设置为1
     if (sampling == 0) and (GAdj.shape[0] <= 100):
         sampling = 1
+    # 获取GAdj的节点数
     N = GAdj.shape[0]
-    initialComponent = get_component_size(GAdj)
-    initialLinks = get_link_size(GAdj)
+    # 获取GAdj的初始组件大小
+    initialComponent, initialLinks = get_component_size(
+        GAdj), get_link_size(GAdj)
+    # 计算GAdj的平均链接数
     m = GAdj.sum()/N
+    # 初始化组件变化数组
     componentEvolution = np.zeros(int(N/sampling))
+    # 初始化链接变化数组
     linksEvolution = np.zeros(int(N/sampling))
+    # 初始化计数器
     j = 0
+    # 遍历GAdj的节点
     for i in range(N-1):
+        # 如果计数器与采样率相等，则进行操作
         if i % sampling == 0:
+            # 如果计数器为0，则计算初始组件和链接大小
             if i == 0:
                 componentEvolution[j] = get_component_size(
                     GAdj)/initialComponent
                 linksEvolution[j] = get_link_size(GAdj)/initialLinks
                 j += 1
             else:
+                # 否则，移除节点并计算组件和链接大小
                 GAdj = remove_node(GAdj, attackStrategy[i-sampling:i])
                 componentEvolution[j] = get_component_size(
                     GAdj)/initialComponent
                 linksEvolution[j] = get_link_size(GAdj)/initialLinks
                 j += 1
+    # 返回组件和链接变化数组
     return componentEvolution, linksEvolution
 
 
 ######## domirank相关内容的开始 ####################
 
-def domirank(G, analytical=True, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, checkStep=10):
+def domirank_by_annalytical(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, checkStep=10):
+    '''
+    翻译：G是作为稀疏数组输入的图。
+    这解决了论文中提出的动态方程：“DomiRank Centrality：通过节点优势揭示复杂网络的架构脆弱性”并产生以下输出：DomiRankCentrality
+    在这里，sigma需要事先选择。
+    dt确定步长，通常，0.1对于大多数网络来说已经足够精细（可能会对度值极高的网络造成问题）
+    maxIter是你在没有在之前收敛或发散之前搜索的深度。
+    Checkstep是你在检查是否收敛或发散之前要走的步数。
+    该算法与O(m)成比例，其中m是您的稀疏数组中的链接。
+    '''
+    # 如果sigma为-1，则调用optimal_sigma函数计算最优sigma值
+    if sigma == -1:
+        sigma = optimal_sigma(
+            G, analytical=True, dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    # 使用稀疏矩阵求解器求解sigma*G + sp.sparse.identity(G.shape[0])的逆矩阵，并乘以sigma*G.sum(axis=-1)
+    Psi = sp.sparse.linalg.spsolve(
+        sigma*G + sp.sparse.identity(G.shape[0]), sigma*G.sum(axis=-1))
+    return Psi
+
+def domirank_by_recursive(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, checkStep=10):
     '''
     翻译：G是作为稀疏数组输入的图。
     这解决了论文中提出的动态方程：“DomiRank Centrality：通过节点优势揭示复杂网络的架构脆弱性”并产生以下输出：bool，DomiRankCentrality
@@ -162,43 +187,54 @@ def domirank(G, analytical=True, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, c
     Checkstep是你在检查是否收敛或发散之前要走的步数。
     该算法与O(m)成比例，其中m是您的稀疏数组中的链接。
     '''
-    if type(G) == nx.classes.graph.Graph:  # check if it is a networkx Graph
-        # convert to scipy sparse if it is a graph
+    if type(G) == nx.classes.graph.Graph:
         G = nx.to_scipy_sparse_array(G)
     else:
         G = G.copy()
-    if analytical == False:
-        if sigma == -1:
-            sigma, _ = optimal_sigma(
-                G, analytical=False, dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
-        pGAdj = sigma*G.astype(np.float32)
-        Psi = np.ones(pGAdj.shape[0]).astype(np.float32)/pGAdj.shape[0]
-        maxVals = np.zeros(int(maxIter/checkStep)).astype(np.float32)
-        dt = np.float32(dt)
-        j = 0
-        boundary = epsilon*pGAdj.shape[0]*dt
-        for i in range(maxIter):
-            tempVal = ((pGAdj @ (1-Psi)) - Psi)*dt
-            Psi += tempVal.real
-            if i % checkStep == 0:
-                if np.abs(tempVal).sum() < boundary:
-                    break
-                maxVals[j] = tempVal.max()
-                if i == 0:
-                    initialChange = maxVals[j]
-                if j > 0:
-                    if maxVals[j] > maxVals[j-1] and maxVals[j-1] > maxVals[j-2]:
-                        return False, Psi
-                j += 1
 
-        return True, Psi
-    else:
-        if sigma == -1:
-            sigma = optimal_sigma(
-                G, analytical=True, dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
-        Psi = sp.sparse.linalg.spsolve(
-            sigma*G + sp.sparse.identity(G.shape[0]), sigma*G.sum(axis=-1))
-        return True, Psi
+    # 如果sigma为-1，则调用optimal_sigma函数计算最优sigma值
+    if sigma == -1:
+        sigma, _ = optimal_sigma(
+            G, analytical=False, dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    # 将G转换为float32类型，并乘以sigma
+    pGAdj = sigma*G.astype(np.float32)
+    # 初始化Psi为1/n，n为pGAdj的行数
+    Psi = np.ones(pGAdj.shape[0]).astype(np.float32)/pGAdj.shape[0]
+    # 初始化maxVals为0，长度为maxIter/checkStep
+    maxVals = np.zeros(int(maxIter/checkStep)).astype(np.float32)
+    # 将dt转换为float32类型
+    dt = np.float32(dt)
+    # 初始化j为0
+    j = 0
+    # 计算边界值
+    boundary = epsilon*pGAdj.shape[0]*dt
+    # 循环maxIter次
+    for i in range(maxIter):
+        # 计算tempVal
+        tempVal = ((pGAdj @ (1-Psi)) - Psi)*dt
+        # 更新Psi
+        Psi += tempVal.real
+        # 如果i能被checkStep整除
+        if i % checkStep == 0:
+            # 如果tempVal的绝对值之和小于边界值，则跳出循环
+            if np.abs(tempVal).sum() < boundary:
+                break
+            # 将tempVal的最大值存入maxVals
+            maxVals[j] = tempVal.max()
+            # 如果i为0
+            if i == 0:
+                # 将maxVals的第一个值存入initialChange
+                initialChange = maxVals[j]
+            # 如果j大于0
+            if j > 0:
+                # 如果maxVals[j]大于maxVals[j-1]且maxVals[j-1]大于maxVals[j-2]，则返回False和Psi
+                if maxVals[j] > maxVals[j-1] and maxVals[j-1] > maxVals[j-2]:
+                    return False, Psi
+            # j加1
+            j += 1
+
+    # 返回True和Psi
+    return True, Psi
 
 
 def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10):
@@ -211,74 +247,95 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
     如果DomiRank在100次迭代内没有开始发散，则增加maxIter（以增加计算成本为代价，如果希望潜在提高准确性）。
     如果sigma的值太大，则减少checkstep以提高错误发现，但频繁减少该值时计算成本会变大（但计算成本可以忽略不计）。
     '''
-    x = (minVal + maxVal)/G.sum(axis=-1).max()
-    minValStored = 0
-    for i in range(maxDepth):
-        if maxVal - minVal < epsilon:
+    x = (minVal + maxVal)/G.sum(axis=-1).max()  # 计算初始值x
+    minValStored = 0  # 初始化最小值存储变量
+    for i in range(maxDepth):  # 循环maxDepth次
+        if maxVal - minVal < epsilon:  # 如果最大值和最小值的差小于epsilon，则跳出循环
             break
-        if domirank(G, False, x, dt, epsilon, maxIter, checkStep)[0]:
-            minVal = x
-            x = (minVal + maxVal)/2
-            minValStored = minVal
+        # 如果domirank函数返回True
+        if domirank_by_recursive(G, x, dt, epsilon, maxIter, checkStep)[0]:
+            minVal = x  # 更新最小值
+            x = (minVal + maxVal)/2  # 更新x
+            minValStored = minVal  # 更新最小值存储变量
         else:
-            maxVal = (x + maxVal)/2
-            x = (minVal + maxVal)/2
-        if minVal == 0:
-            print(f'Current Interval : [-inf, -{1/maxVal}]')
+            maxVal = (x + maxVal)/2  # 更新最大值
+            x = (minVal + maxVal)/2  # 更新x
+        if minVal == 0:  # 如果最小值为0
+            print(f'Current Interval : [-inf, -{1/maxVal}]')  # 打印当前区间
         else:
-            print(f'Current Interval : [-{1/minVal}, -{1/maxVal}]')
-    finalVal = (maxVal + minVal)/2
-    return -1/finalVal
+            print(f'Current Interval : [-{1/minVal}, -{1/maxVal}]')  # 打印当前区间
+    finalVal = (maxVal + minVal)/2  # 计算最终值
+    return -1/finalVal  # 返回最终值
 
 
 ############## 本节用于寻找最优的sigma #######################
 
 def process_iteration(q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling):
-    tf, domiDist = domirank(spArray, analytical=analytical, sigma=sigma,
+    # 计算domiRank和domiDist
+    if analytical:
+        domiDist = domirank_by_annalytical(spArray, sigma=sigma,
                             dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    else:
+        _, domiDist = domirank_by_recursive(spArray, sigma=sigma,
+                            dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    # 生成攻击
     domiAttack = generate_attack(domiDist)
+    # 在采样网络上进行攻击
     ourTempAttack, __ = network_attack_sampled(
         spArray, domiAttack, sampling=sampling)
+    # 计算最终误差
     finalErrors = ourTempAttack.sum()
+    # 将结果放入队列
     q.put((i, finalErrors))
 
 
 def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterationNo=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10, maxDepth=100, sampling=0):
     ''' 
-    翻译：这部分通过搜索空间来找到最优的sigma，这里有一些新颖的参数：
+    翻译：搜索空间来找到最优的sigma
     spArray：是网络的输入稀疏数组/矩阵。
     startVal：是你想要搜索的空间的起始值。
     endVal：是你想要搜索的空间的结束值（通常是特征值）
     iterationNo：你设置的lambN之间的空间划分的数量
     返回：函数返回sigma的值 - 分数（\sigma）/（-1*lambN）的分子
     '''
+    # 如果endVal为0，则调用find_eigenvalue函数计算endVal
     if endVal == 0:
         endVal = find_eigenvalue(spArray, maxDepth=maxDepth, dt=dt,
                                  epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    # 导入multiprocessing模块
     import multiprocessing as mp
+    # 计算endval的值
     endval = -0.9999/endVal
+    # 计算tempRange的值
     tempRange = np.arange(startval, endval + (endval-startval) /
                           iterationNo, (endval-startval)/iterationNo)
+    # 创建一个进程列表
     processes = []
+    # 创建一个队列
     q = mp.Queue()
+    # 遍历tempRange，创建进程
     for i, sigma in enumerate(tempRange):
         p = mp.Process(target=process_iteration, args=(
             q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling))
         p.start()
         processes.append(p)
 
-    results = [None] * len(tempRange)  # Initialize a results list
+    # 创建一个结果列表
+    results = [None] * len(tempRange)
 
-    # Join the processes and gather results from the queue翻译：加入进程并从队列中获取结果
+    # 等待所有进程结束
     for p in processes:
         p.join()
-
-    # Ensure that results are fetched from the queue after all processes are done翻译：确保在所有进程完成后从队列中获取结果
+    # 从队列中获取结果
     while not q.empty():
         idx, result = q.get()
-        results[idx] = result  # Store result in the correct order 以正确的顺序保存结果
+        results[idx] = result
 
+    # 将结果转换为numpy数组
     finalErrors = np.array(results)
+    # 找到最小误差的索引
     minEig = np.where(finalErrors == finalErrors.min())[0][-1]
+    # 找到最小误差对应的tempRange的值
     minEig = tempRange[minEig]
+    # 返回最小误差对应的tempRange的值和所有误差
     return minEig, finalErrors
