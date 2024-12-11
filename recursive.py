@@ -31,8 +31,8 @@ G = nx.fast_gnp_random_graph(N, 2*m/N, directed=directed, seed=seed)
 nx.draw_networkx(G)
 plt.savefig('graph.png')
 
-# 在这里和下面插入图 ########################3
-# insert network hereunder ########################3
+# 在这里和下面插入图 ########################
+# insert network hereunder ########################
 GAdj = nx.to_scipy_sparse_array(G)
 # 转置网络来改变方向
 # flipping the network direction if it is directed (depends on the interactions of the links...)
@@ -68,7 +68,6 @@ plt.plot(ourRange, sigmaArray)
 plt.plot(ourRange[index], sigmaArray[index], 'ro', mfc='none', markersize=10)
 plt.xlabel('sigma')
 plt.ylabel('loss')
-
 
 # generate the centrality using the optimal sigma
 _, ourDomiRankDistribution = dr.domirank_by_recursive(

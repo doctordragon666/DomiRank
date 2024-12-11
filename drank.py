@@ -160,7 +160,7 @@ def network_attack_sampled(G, attackStrategy, sampling=0):
 
 def domirank_by_annalytical(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, checkStep=10):
     '''
-    翻译：G是作为稀疏数组输入的图。
+    G是作为稀疏数组输入的图。
     这解决了论文中提出的动态方程：“DomiRank Centrality：通过节点优势揭示复杂网络的架构脆弱性”并产生以下输出：DomiRankCentrality
     在这里，sigma需要事先选择。
     dt确定步长，通常，0.1对于大多数网络来说已经足够精细（可能会对度值极高的网络造成问题）
@@ -168,6 +168,8 @@ def domirank_by_annalytical(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, che
     Checkstep是你在检查是否收敛或发散之前要走的步数。
     该算法与O(m)成比例，其中m是您的稀疏数组中的链接。
     '''
+    if type(G) == nx.classes.graph.Graph:
+        G = nx.to_scipy_sparse_array(G)
     # 如果sigma为-1，则调用optimal_sigma函数计算最优sigma值
     if sigma == -1:
         sigma = optimal_sigma(
@@ -177,9 +179,10 @@ def domirank_by_annalytical(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, che
         sigma*G + sp.sparse.identity(G.shape[0]), sigma*G.sum(axis=-1))
     return Psi
 
+
 def domirank_by_recursive(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, checkStep=10):
     '''
-    翻译：G是作为稀疏数组输入的图。
+    G是作为稀疏数组输入的图。
     这解决了论文中提出的动态方程：“DomiRank Centrality：通过节点优势揭示复杂网络的架构脆弱性”并产生以下输出：bool，DomiRankCentrality
     在这里，sigma需要事先选择。
     dt确定步长，通常，0.1对于大多数网络来说已经足够精细（可能会对度值极高的网络造成问题）
@@ -196,45 +199,29 @@ def domirank_by_recursive(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, check
     if sigma == -1:
         sigma, _ = optimal_sigma(
             G, analytical=False, dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
-    # 将G转换为float32类型，并乘以sigma
     pGAdj = sigma*G.astype(np.float32)
     # 初始化Psi为1/n，n为pGAdj的行数
     Psi = np.ones(pGAdj.shape[0]).astype(np.float32)/pGAdj.shape[0]
     # 初始化maxVals为0，长度为maxIter/checkStep
     maxVals = np.zeros(int(maxIter/checkStep)).astype(np.float32)
-    # 将dt转换为float32类型
     dt = np.float32(dt)
-    # 初始化j为0
     j = 0
-    # 计算边界值
     boundary = epsilon*pGAdj.shape[0]*dt
-    # 循环maxIter次
     for i in range(maxIter):
-        # 计算tempVal
         tempVal = ((pGAdj @ (1-Psi)) - Psi)*dt
-        # 更新Psi
-        Psi += tempVal.real
-        # 如果i能被checkStep整除
+        Psi += tempVal
         if i % checkStep == 0:
-            # 如果tempVal的绝对值之和小于边界值，则跳出循环
             if np.abs(tempVal).sum() < boundary:
                 break
-            # 将tempVal的最大值存入maxVals
             maxVals[j] = tempVal.max()
-            # 如果i为0
-            if i == 0:
-                # 将maxVals的第一个值存入initialChange
-                initialChange = maxVals[j]
-            # 如果j大于0
             if j > 0:
-                # 如果maxVals[j]大于maxVals[j-1]且maxVals[j-1]大于maxVals[j-2]，则返回False和Psi
                 if maxVals[j] > maxVals[j-1] and maxVals[j-1] > maxVals[j-2]:
                     return False, Psi
-            # j加1
             j += 1
 
-    # 返回True和Psi
     return True, Psi
+
+############## 本节用于寻找最优的sigma #######################
 
 
 def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10):
@@ -248,7 +235,7 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
     如果sigma的值太大，则减少checkstep以提高错误发现，但频繁减少该值时计算成本会变大（但计算成本可以忽略不计）。
     '''
     x = (minVal + maxVal)/G.sum(axis=-1).max()  # 计算初始值x
-    minValStored = 0  # 初始化最小值存储变量
+    # minValStored = 0  # 初始化最小值存储变量
     for i in range(maxDepth):  # 循环maxDepth次
         if maxVal - minVal < epsilon:  # 如果最大值和最小值的差小于epsilon，则跳出循环
             break
@@ -256,7 +243,7 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
         if domirank_by_recursive(G, x, dt, epsilon, maxIter, checkStep)[0]:
             minVal = x  # 更新最小值
             x = (minVal + maxVal)/2  # 更新x
-            minValStored = minVal  # 更新最小值存储变量
+            # minValStored = minVal  # 更新最小值存储变量
         else:
             maxVal = (x + maxVal)/2  # 更新最大值
             x = (minVal + maxVal)/2  # 更新x
@@ -268,16 +255,14 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
     return -1/finalVal  # 返回最终值
 
 
-############## 本节用于寻找最优的sigma #######################
-
 def process_iteration(q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling):
     # 计算domiRank和domiDist
     if analytical:
         domiDist = domirank_by_annalytical(spArray, sigma=sigma,
-                            dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+                                           dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
     else:
         _, domiDist = domirank_by_recursive(spArray, sigma=sigma,
-                            dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+                                            dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
     # 生成攻击
     domiAttack = generate_attack(domiDist)
     # 在采样网络上进行攻击
