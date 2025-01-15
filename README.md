@@ -56,6 +56,9 @@ Current Interval : [-5.346929049327728, -5.346592519761527]
 Current Interval : [-5.346929049327728, -5.346676648181617]
 
  The optimal sigma was found to be: 0.8799126416163416/-lambda_N
+ 
+Our muti-threaded algorithm took: 7.222913026809692s
+Our single-threaded algorithm took: 2.182962417602539s
 ```
 
 给定的网络E-R图
@@ -71,7 +74,10 @@ Current Interval : [-5.346929049327728, -5.346676648181617]
 ![递归算法的domirank节点的攻击](result_domiattacks.png)
 
 分析算法的domirank节点的攻击
+
 ![分析算法的domirank节点的攻击](result_domiattack.png)
+
+
 
 ### 安装说明
 
@@ -95,12 +101,6 @@ $pip install -r requirements.txt
 |        | find_eigenvalue         |      |   找到邻接矩阵的最大负特征值  |
 |        | process_iteration       |      |   迭代进程   |
 |        | optimal_sigma           |      |   求解sigma   |
-
-将 G 更改为您想要的任何网络（networkx），或者导入任何网络并将其转换为 scipy.sparse.csr_array() 数据结构。这将确保代码顺利运行。
-
-此外，在 domirank.domirank() 函数中，如果您只传递邻接矩阵（稀疏）作为输入，它将自动计算最优 sigma。但是，您也可以传递单个参数，以创建会破坏网络并使其难以恢复的 domiranks，或者，仅为了简单地理解高 sigma（竞争）的动态。
-
-最后，可以使用以下函数根据任何策略攻击网络。domirank.network_attack_sampled(GAdj, attackStrategy)，其中 GAdj 是作为 scipy.sparse.csr_array() 的邻接矩阵，攻击策略是节点删除的顺序（节点-id）。节点-id 排序可以通过使用函数 domirank.generate_attack(centrality) 从中心性数组生成，其中，中心性是一个按节点-id（从最小到最大）排序的中心性分布数组。
 
 ### 算法解释
 
@@ -196,6 +196,21 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
     finalVal = (maxVal + minVal)/2  # 计算最终值
     return -1/finalVal  # 返回最终值
 ```
+
+### 项目更新打算
+
+BUG：
+
+- 在windows下运行会报错，调用多线程需要main函数，否则无法识别当前的进程。
+- 有些函数依赖于特定的Python版本
+
+TODO：
+
+- 自动生成domirank的分布
+- 根据domirank的分布来给出重要的节点
+- 有向图的domirank怎么计算
+
+
 
 ### 版权信息
 

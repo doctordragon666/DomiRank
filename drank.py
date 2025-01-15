@@ -1,4 +1,5 @@
 ########## 关联库 #############
+import asyncio
 import numpy as np
 import scipy as sp
 import scipy.sparse
@@ -224,7 +225,7 @@ def domirank_by_recursive(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, check
 ############## 本节用于寻找最优的sigma #######################
 
 
-def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10):
+def find_eigenvaluen(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10):
     '''
     翻译：G是作为稀疏数组输入的图。
     使用DomiRank算法找到邻接矩阵的最大负特征值。
@@ -255,7 +256,7 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
     return -1/finalVal  # 返回最终值
 
 
-def process_iteration(q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling):
+def process_iterationn(q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling):
     # 计算domiRank和domiDist
     if analytical:
         domiDist = domirank_by_annalytical(spArray, sigma=sigma,
@@ -274,7 +275,7 @@ def process_iteration(q, i, analytical, sigma, spArray, maxIter, checkStep, dt, 
     q.put((i, finalErrors))
 
 
-def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterationNo=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10, maxDepth=100, sampling=0):
+def optimal_sigman(spArray, analytical=True, endVal=0, startval=0.000001, iterationNo=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10, maxDepth=100, sampling=0):
     ''' 
     翻译：搜索空间来找到最优的sigma
     spArray：是网络的输入稀疏数组/矩阵。
@@ -300,7 +301,7 @@ def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterati
     q = mp.Queue()
     # 遍历tempRange，创建进程
     for i, sigma in enumerate(tempRange):
-        p = mp.Process(target=process_iteration, args=(
+        p = mp.Process(target=process_iterationn, args=(
             q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling))
         p.start()
         processes.append(p)
@@ -314,6 +315,78 @@ def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterati
     # 从队列中获取结果
     while not q.empty():
         idx, result = q.get()
+        results[idx] = result
+
+    # 将结果转换为numpy数组
+    finalErrors = np.array(results)
+    # 找到最小误差的索引
+    minEig = np.where(finalErrors == finalErrors.min())[0][-1]
+    # 找到最小误差对应的tempRange的值
+    minEig = tempRange[minEig]
+    # 返回最小误差对应的tempRange的值和所有误差
+    return minEig, finalErrors
+
+
+################# 使用协程来计算指标 #################
+
+
+async def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10):
+    x = (minVal + maxVal)/G.sum(axis=-1).max()  # 计算初始值x
+    # minValStored = 0  # 初始化最小值存储变量
+    for i in range(maxDepth):  # 循环maxDepth次
+        if maxVal - minVal < epsilon:  # 如果最大值和最小值的差小于epsilon，则跳出循环
+            break
+        # 如果domirank函数返回True
+        if domirank_by_recursive(G, x, dt, epsilon, maxIter, checkStep)[0]:
+            minVal = x  # 更新最小值
+            x = (minVal + maxVal)/2  # 更新x
+            # minValStored = minVal  # 更新最小值存储变量
+        else:
+            maxVal = (x + maxVal)/2  # 更新最大值
+            x = (minVal + maxVal)/2  # 更新x
+        if minVal == 0:  # 如果最小值为0
+            print(f'Current Interval : [-inf, -{1/maxVal}]')  # 打印当前区间
+        else:
+            print(f'Current Interval : [-{1/minVal}, -{1/maxVal}]')  # 打印当前区间
+    finalVal = (maxVal + minVal)/2  # 计算最终值
+    return -1/finalVal  # 返回最终值
+
+
+async def process_iteration(i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling):
+    # 计算domiRank和domiDist
+    if analytical:
+        domiDist = domirank_by_annalytical(spArray, sigma=sigma,
+                                           dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    else:
+        _, domiDist = domirank_by_recursive(spArray, sigma=sigma,
+                                            dt=dt, epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    # 生成攻击
+    domiAttack = generate_attack(domiDist)
+    # 在采样网络上进行攻击
+    ourTempAttack, __ = network_attack_sampled(
+        spArray, domiAttack, sampling=sampling)
+    # 计算最终误差
+    finalErrors = ourTempAttack.sum()
+    return i, finalErrors
+
+
+async def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterationNo=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10, maxDepth=100, sampling=0):
+    # 如果endVal为0，则调用find_eigenvalue函数计算endVal
+    if endVal == 0:
+        endVal = find_eigenvalue(spArray, maxDepth=maxDepth, dt=dt,
+                                 epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+    endval = -0.9999/endVal
+    # 计算tempRange的值
+    tempRange = np.arange(startval, endval + (endval-startval) /
+                          iterationNo, (endval-startval)/iterationNo)
+    tasks = []
+    results = [None] * len(tempRange)
+    for i, sigma in enumerate(tempRange):
+        tasks.append(asyncio.create_task(
+            process_iteration(i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling)))
+    for task in tasks:
+        await task
+        idx, result = task.result()
         results[idx] = result
 
     # 将结果转换为numpy数组
