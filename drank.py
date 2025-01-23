@@ -215,7 +215,8 @@ def domirank_by_recursive(G, sigma=-1, dt=0.1, epsilon=1e-5, maxIter=1000, check
             if np.abs(tempVal).sum() < boundary:
                 break
             maxVals[j] = tempVal.max()
-            if j > 0:
+            # if j > 0: 这里犯了一个错误，这里不一定前者不成立，
+            if j > 1:
                 if maxVals[j] > maxVals[j-1] and maxVals[j-1] > maxVals[j-2]:
                     return False, Psi
             j += 1

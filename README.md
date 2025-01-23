@@ -1,4 +1,6 @@
 ## DomiRank
+[English Version](README_en.md)
+
 复合中心性指标
 
 ### 项目简介
