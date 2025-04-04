@@ -90,19 +90,9 @@ Our single-threaded algorithm took: 2.182962417602539s
 
 ![给定的网络](graph_ER.png)
 
-普通度节点的攻击性
+与度攻击策略的对比
 
-![普通节点攻击](result_attack.png)
-
-递归算法的domirank节点的攻击
-
-![递归算法的domirank节点的攻击](result_domiattacks.png)
-
-分析算法的domirank节点的攻击
-
-![分析算法的domirank节点的攻击](result_domiattack.png)
-
-
+![节点攻击对比](contrary.png)
 
 ### 安装说明
 
