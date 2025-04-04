@@ -15,6 +15,29 @@
 
 此外，我们表明，基于 DomiRank 的攻击会在网络中造成更持久的损害，阻碍其反弹能力，从而损害系统弹性。DomiRank 中心性利用其定义中嵌入的竞争机制来揭示网络的脆弱性，为设计策略以减轻漏洞和增强关键基础设施的弹性铺平了道路。
 
+```shell
+.
+├── LICENSE
+├── README.md
+├── README_en.md
+├── __pycache__
+│   ├── domirank.cpython-310.pyc
+│   └── drank.cpython-310.pyc
+├── analytical.py
+├── draft.py
+├── drank.py
+├── graph_ER.png
+├── img
+│   ├── result_degree.png
+│   └── result_domirank.png
+├── main.py
+├── recursive.py
+├── requirements.txt
+└── src # 原来作者的代码
+    ├── domirank.py
+    └── main.py
+```
+
 ### 项目使用效果图
 
 ```shell
@@ -200,6 +223,8 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
 ```
 
 ### 项目更新打算
+
+具体的内容请查看[文档文件](document.ipynb)
 
 BUG：
 

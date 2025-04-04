@@ -16,12 +16,6 @@ directed = False
 # for random results随机结果
 seed = np.random.randint(0, high=2**32-1)
 
-# for deterministic results固定结果
-# seed = 42
-
-# setting the random seed
-np.random.seed(seed)
-
 ##### END OF RANDOMIZATION #####
 
 ############## 注意：在这里你可以注释来创建你想要的任何图表，作者创建的是E-R图 ############
