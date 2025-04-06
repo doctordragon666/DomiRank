@@ -114,7 +114,7 @@ $pip install -r requirements.txt
 |        | domirank_by_annalytical |      |  分析法求domirank   |
 |        | domirank_by_recursive   |      |   递归法求解domirank   |
 |        | find_eigenvalue         |      |   找到邻接矩阵的最大负特征值  |
-|        | process_iteration       |      |   迭代进程   |
+|        | process_iteration_thread       |      |   迭代进程   |
 |        | optimal_sigma           |      |   求解sigma   |
 
 ### 算法解释
@@ -215,19 +215,6 @@ def find_eigenvalue(G, minVal=0, maxVal=1, maxDepth=100, dt=0.1, epsilon=1e-5, m
 ### 项目更新打算
 
 具体的内容请查看[文档文件](document.ipynb)
-
-BUG：
-
-- 在windows下运行会报错，调用多线程需要main函数，否则无法识别当前的进程。
-- 有些函数依赖于特定的Python版本
-
-TODO：
-
-- 自动生成domirank的分布
-- 根据domirank的分布来给出重要的节点
-- 有向图的domirank怎么计算
-
-
 
 ### 版权信息
 
