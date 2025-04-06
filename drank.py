@@ -410,11 +410,7 @@ def process_iteration_thread(x):
 
 def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterationNo=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10, sampling=0):
     ''' 
-    搜索空间来找到最优的sigma
-    spArray：是网络的输入稀疏数组/矩阵。
-    startVal：是你想要搜索的空间的起始值。
-    endVal：是你想要搜索的空间的结束值（通常是特征值）
-    iterationNo：你设置的lambN之间的空间划分的数量
+    在指定范围内搜索来找到最优的sigma
 
     Parameters
     ----------
@@ -423,11 +419,11 @@ def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterati
     `analytical` : bool, optional
         是否使用解析方法。默认值为True。
     `endVal` : float, optional
-        结束值。默认值为0。
+        结束值（通常是特征值）。默认值为0，表示调用find_eigenvalue函数计算endVal
     `startval` : float, optional
         起始值。默认值为0.000001。
     `iterationNo` : int, optional
-        迭代次数。默认值为100。
+        迭代次数。默认值为100。设置的[0,lambN]之间的区间划分的大小
     `dt` : float, optional
         步长。默认值为0.1。
     `epsilon` : float, optional
@@ -438,8 +434,12 @@ def optimal_sigma(spArray, analytical=True, endVal=0, startval=0.000001, iterati
         检查步长。默认值为10。
     `sampling` : int, optional
         采样率。默认值为0。
+        
+    Returns
+    -------
+    `tuple`
+        返回一个元组，包括最优的sigma值和对应的曲线面积。
     '''
-    # 如果endVal为0，则调用find_eigenvalue函数计算endVal
     if endVal == 0:
         endVal = find_eigenvalue(spArray)
     # 计算endval的值

@@ -20,18 +20,13 @@
 ├── LICENSE
 ├── README.md
 ├── README_en.md
-├── __pycache__
-│   ├── domirank.cpython-310.pyc
-│   └── drank.cpython-310.pyc
-├── analytical.py
-├── draft.py
+├── document.ipynb
 ├── drank.py
 ├── graph_ER.png
+├── contrary.png
 ├── img
 │   ├── result_degree.png
 │   └── result_domirank.png
-├── main.py
-├── recursive.py
 ├── requirements.txt
 └── src # 原来作者的代码
     ├── domirank.py
