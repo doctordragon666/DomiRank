@@ -4,6 +4,7 @@ import numpy as np
 import scipy as sp
 import scipy.sparse
 import networkx as nx
+import multiprocessing as mp # optimal_sigmaw函数需要
 
 ########## 这里是一些分解网络和测试网络必需的函数 #############
 
@@ -289,8 +290,6 @@ def optimal_sigman(spArray, analytical=True, endVal=0, startval=0.000001, iterat
     if endVal == 0:
         endVal = find_eigenvaluen(spArray, maxDepth=maxDepth, dt=dt,
                                  epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
-    # 导入multiprocessing模块
-    import multiprocessing as mp
     # 计算endval的值
     endval = -0.9999/endVal
     # 计算tempRange的值
@@ -326,3 +325,54 @@ def optimal_sigman(spArray, analytical=True, endVal=0, startval=0.000001, iterat
     minEig = tempRange[minEig]
     # 返回最小误差对应的tempRange的值和所有误差
     return minEig, finalErrors
+
+# def optimal_sigmaw(spArray, analytical=True, endVal=0, startval=0.000001, iterationNo=100, dt=0.1, epsilon=1e-5, maxIter=100, checkStep=10, maxDepth=100, sampling=0):
+#     ''' 
+#     翻译：搜索空间来找到最优的sigma
+#     spArray：是网络的输入稀疏数组/矩阵。
+#     startVal：是你想要搜索的空间的起始值。
+#     endVal：是你想要搜索的空间的结束值（通常是特征值）
+#     iterationNo：你设置的lambN之间的空间划分的数量
+#     返回：函数返回sigma的值 - 分数（\sigma）/（-1*lambN）的分子
+#     '''
+#     # 如果endVal为0，则调用find_eigenvalue函数计算endVal
+#     if endVal == 0:
+#         endVal = find_eigenvaluen(spArray, maxDepth=maxDepth, dt=dt,
+#                                  epsilon=epsilon, maxIter=maxIter, checkStep=checkStep)
+#     # 导入multiprocessing模块
+#     import multiprocessing as mp
+#     # 计算endval的值
+#     endval = -0.9999/endVal
+#     # 计算tempRange的值
+#     tempRange = np.arange(startval, endval + (endval-startval) /
+#                           iterationNo, (endval-startval)/iterationNo)
+#     # 创建一个进程列表
+#     processes = []
+#     # 创建一个队列
+#     q = mp.Queue()
+#     # 遍历tempRange，创建进程
+#     for i, sigma in enumerate(tempRange):
+#         p = mp.Process(target=process_iterationn, args=(
+#             q, i, analytical, sigma, spArray, maxIter, checkStep, dt, epsilon, sampling))
+#         p.start()
+#         processes.append(p)
+
+#     # 创建一个结果列表
+#     results = [None] * len(tempRange)
+
+#     # 等待所有进程结束
+#     for p in processes:
+#         p.join()
+#     # 从队列中获取结果
+#     while not q.empty():
+#         idx, result = q.get()
+#         results[idx] = result
+
+#     # 将结果转换为numpy数组
+#     finalErrors = np.array(results)
+#     # 找到最小误差的索引
+#     minEig = np.where(finalErrors == finalErrors.min())[0][-1]
+#     # 找到最小误差对应的tempRange的值
+#     minEig = tempRange[minEig]
+#     # 返回最小误差对应的tempRange的值和所有误差
+#     return minEig, finalErrors
